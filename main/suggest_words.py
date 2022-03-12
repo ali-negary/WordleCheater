@@ -5,17 +5,18 @@ class SuggestWords:
     """This class gets the info on the words.
     Then, suggest a list of words based on the info."""
 
-    def __init__(self, letters: list) -> None:
+    def __init__(self, letters: list, length: int) -> None:
         self.base_url = 'https://wordfinderx.com/words-for/_/'
         self.letters = letters
         self.start = ''
         self.end = ''
         self.substring = ''
-        self.length = ''
+        self.length = length
         self.include = ''
         self.exclude = ''
         self.url = ''
         self.words = []
+        self.yellow_letters = {0: [], 1: [], 2: [], 3: [], 4: []}
 
     def process_letters_for_url(self, ) -> None:
         """Processes the letters to create the url"""
@@ -52,20 +53,37 @@ class SuggestWords:
         include = '' if not self.include else f"include-letters/{''.join(self.include)}/"
         self.url = self.base_url + start_with + end_with + contains + length + exclude + include
 
+
+
     def grab_words(self, ) -> None:
         """Grabs words from wordfinderx.com"""
         response = requests.get(self.url)
+        status = response.status_code
+        if status == 200:
+            text = response.text
 
         self.words = []
 
+    def misplaced_words(self, ):
+        """Completes yellow_letters dict based on the misplaced letters"""
+        for index, letter in enumerate(self.letters):
+            if letter['state'] == 'y':
+                self.yellow_letters[index].append(letter['letter'])
+
     def filter_words(self, ) -> None:
         """Filters the words based on user input"""
-        pass
+        for suggestion in self.words:
+            for index, letter in enumerate(suggestion):
+                if suggestion[index] in self.yellow_letters[index]:
+                    self.words.remove(suggestion)
+                    break
+            t = 'test'
 
     def next_suggestion(self, ):
         """Provides the next suggestions"""
         self.process_letters_for_url()
         self.create_url()
         self.grab_words()
+        self.misplaced_words()
         self.filter_words()
         print(self.words)
