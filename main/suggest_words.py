@@ -1,4 +1,7 @@
 import requests
+from english_words import english_words_set
+from bs4 import BeautifulSoup
+from string import digits
 
 
 class SuggestWords:
@@ -53,16 +56,44 @@ class SuggestWords:
         include = '' if not self.include else f"include-letters/{''.join(self.include)}/"
         self.url = self.base_url + start_with + end_with + contains + length + exclude + include
 
-
-
-    def grab_words(self, ) -> None:
+    def grab_words_online(self, ) -> dict:
         """Grabs words from wordfinderx.com"""
+        # initiate variables.
+        status = False
+        words_list = []
+        # grab words from the url.
         response = requests.get(self.url)
         status = response.status_code
         if status == 200:
-            text = response.text
+            page_content = response.content
+            soup = BeautifulSoup(page_content, 'html.parser')
+            words_list = [
+                tag.text.strip().strip(digits) for tag in
+                soup.find_all('div', {"class": "wordblock word-list-item"})
+            ]
+            status = True
 
-        self.words = []
+        return {'status': status, 'words': words_list}
+
+    def get_words_from_dictionary(self) -> dict:
+        """Gets words from the dictionary"""
+        # initiate variables.
+        status = False
+        words_list = []
+        # grab words from url.
+
+        return {'status': status, 'words': words_list}
+
+    def list_words(self, ):
+        """Provide a lists words"""
+        words = self.grab_words_online()
+        if words['status']:
+            self.words = words['words']
+        else:
+            raise Exception('Could not get words')
+            # words = self.get_words_from_dictionary()
+            # if words['status']:
+            #     self.words = words['words']
 
     def misplaced_words(self, ):
         """Completes yellow_letters dict based on the misplaced letters"""
@@ -83,7 +114,7 @@ class SuggestWords:
         """Provides the next suggestions"""
         self.process_letters_for_url()
         self.create_url()
-        self.grab_words()
+        self.list_words()
         self.misplaced_words()
         self.filter_words()
         print(self.words)
