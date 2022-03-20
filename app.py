@@ -1,4 +1,5 @@
 from main.suggest_words import SuggestWords
+from main.guess_input import UserInput
 
 if __name__ == '__main__':
     # length = input('How many letters in it?')
@@ -14,14 +15,7 @@ if __name__ == '__main__':
 
     # get input, find the word!
     while not found:
-        word = input("Enter your guess: ")
-        status = input("Enter corresponding status of your guess: ")
-        letters = [{'letter': word[index].upper(), 'state': status[index]}
-                   for index in range(len(word))]
-        # for index in range(1, int(length) + 1):
-        #     letter, state = input(f'Letter{index} State\n').split(' ')
-        #     letters.append({'letter': letter.upper(), 'state': state})
-        print(f"current guess: {word.upper()}")
+        letters = UserInput().user_input()
         suggest.next_suggestion(letters)
         i += 1
         if i > 4:
