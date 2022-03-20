@@ -137,7 +137,7 @@ class SuggestWords:
             self.place_state()
             self.filter_words()
             suggestions = self.words
-            print(suggestions)
+            print(', '.join(suggestions))
         else:
             print('Hooray! You have found the correct word!')
             raise SystemExit
