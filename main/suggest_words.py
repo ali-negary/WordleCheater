@@ -8,9 +8,9 @@ class SuggestWords:
     """This class gets the info on the words.
     Then, suggest a list of words based on the info."""
 
-    def __init__(self, letters: list, length: int) -> None:
+    def __init__(self, length: int) -> None:
         self.base_url = 'https://wordfinderx.com/words-for/_/'
-        self.letters = letters
+        self.letters = []
         self.start = ''
         self.end = ''
         self.substring = ''
@@ -20,6 +20,7 @@ class SuggestWords:
         self.url = ''
         self.words = []
         self.yellow_letters = {0: [], 1: [], 2: [], 3: [], 4: []}
+        self.green_letters = {0: '', 1: '', 2: '', 3: '', 4: ''}
 
     def process_letters_for_url(self, ) -> None:
         """Processes the letters to create the url"""
@@ -29,6 +30,9 @@ class SuggestWords:
                 self.exclude += item['letter']
             else:
                 self.include += item['letter']
+        self.include = list(set(self.include))
+        self.exclude = list(set(self.exclude))
+
         # find start and end and initiate substring
         if self.letters[0]['state'] == 'g':
             self.start = self.letters[0]['letter']
@@ -68,7 +72,7 @@ class SuggestWords:
             page_content = response.content
             soup = BeautifulSoup(page_content, 'html.parser')
             words_list = [
-                tag.text.strip().strip(digits) for tag in
+                tag.text.strip().strip(digits).upper() for tag in
                 soup.find_all('div', {"class": "wordblock word-list-item"})
             ]
             status = True
@@ -77,6 +81,7 @@ class SuggestWords:
 
     def get_words_from_dictionary(self) -> dict:
         """Gets words from the dictionary"""
+        # not implemented yet.
         # initiate variables.
         status = False
         words_list = []
@@ -84,7 +89,7 @@ class SuggestWords:
 
         return {'status': status, 'words': words_list}
 
-    def list_words(self, ):
+    def list_words(self, ) -> None:
         """Provide a lists words"""
         words = self.grab_words_online()
         if words['status']:
@@ -95,26 +100,44 @@ class SuggestWords:
             # if words['status']:
             #     self.words = words['words']
 
-    def misplaced_words(self, ):
+    def place_state(self, ) -> None:
         """Completes yellow_letters dict based on the misplaced letters"""
         for index, letter in enumerate(self.letters):
             if letter['state'] == 'y':
                 self.yellow_letters[index].append(letter['letter'])
+            elif letter['state'] == 'g':
+                self.green_letters[index] = letter['letter']
 
     def filter_words(self, ) -> None:
         """Filters the words based on user input"""
+        filter_out = []
         for suggestion in self.words:
+            remove_flag = False
             for index, letter in enumerate(suggestion):
+                # if there is a misplaced yellow letter.
                 if suggestion[index] in self.yellow_letters[index]:
-                    self.words.remove(suggestion)
+                    remove_flag = True
+                # if there is a misplaced green letter.
+                if self.green_letters[index]:
+                    if suggestion[index] != self.green_letters[index]:
+                        remove_flag = True
+                if remove_flag:
+                    filter_out.append(suggestion)
                     break
-            t = 'test'
+        self.words = [word for word in self.words if word not in filter_out]
 
-    def next_suggestion(self, ):
+    def next_suggestion(self, letters: list):
         """Provides the next suggestions"""
-        self.process_letters_for_url()
-        self.create_url()
-        self.list_words()
-        self.misplaced_words()
-        self.filter_words()
-        print(self.words)
+        self.letters = letters
+        found = all(letter['state'] == 'g' for letter in self.letters)
+        if not found:
+            self.process_letters_for_url()
+            self.create_url()
+            self.list_words()
+            self.place_state()
+            self.filter_words()
+            suggestions = self.words
+            print(suggestions)
+        else:
+            print('Hooray! You have found the correct word!')
+            raise SystemExit
