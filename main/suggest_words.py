@@ -101,7 +101,8 @@ class SuggestWords:
             #     self.words = words['words']
 
     def place_state(self, ) -> None:
-        """Completes yellow_letters dict based on the misplaced letters"""
+        """Completes yellow_letters and green_letters dictionaries
+         based on the misplaced letters"""
         for index, letter in enumerate(self.letters):
             if letter['state'] == 'y':
                 self.yellow_letters[index].append(letter['letter'])
@@ -126,18 +127,33 @@ class SuggestWords:
                     break
         self.words = [word for word in self.words if word not in filter_out]
 
+    def validate_input(self, ) -> bool:
+        """
+        Must check if same place does not have
+        more than one kind of state.
+        """
+        return True
+
     def next_suggestion(self, letters: list):
         """Provides the next suggestions"""
         self.letters = letters
+        # check whether the answer is found.
         found = all(letter['state'] == 'g' for letter in self.letters)
         if not found:
-            self.process_letters_for_url()
-            self.create_url()
-            self.list_words()
-            self.place_state()
-            self.filter_words()
-            suggestions = self.words
-            print(', '.join(suggestions))
+            # check whether the guess is valid.
+            valid = self.validate_input()
+            if valid:
+                self.process_letters_for_url()
+                self.create_url()
+                self.list_words()
+                self.place_state()
+                self.filter_words()
+                suggestions = self.words
+                print(', '.join(suggestions))
+                return True
+            else:
+                print('The input is not valid. Enter the words again.\n')
+                return False
         else:
             print('Hooray! You have found the correct word!')
             raise SystemExit

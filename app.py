@@ -4,8 +4,8 @@ from main.guess_input import UserInput
 if __name__ == '__main__':
     # length = input('How many letters in it?')
     length = 5
-    print("Enter your guess letter by letter:")
-    print("(letter (space) state ==> states: (g)reen, (b)lack, (y)ellow.")
+    print("Enter your guess letter by letter:\n")
+    print("(letter (space) state ==> states: (g)reen, (b)lack, (y)ellow.\n")
     # initial values.
     found = False
     i = 0
@@ -16,8 +16,9 @@ if __name__ == '__main__':
     # get input, find the word!
     while not found:
         letters = UserInput().user_input()
-        suggest.next_suggestion(letters)
-        i += 1
+        result = suggest.next_suggestion(letters)
+        if result:
+            i += 1
         if i > 4:
             print('You ran out of guesses!')
             raise SystemExit
