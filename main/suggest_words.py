@@ -155,5 +155,5 @@ class SuggestWords:
                 print('The input is not valid. Enter the words again.\n')
                 return False
         else:
-            print('Hooray! You have found the correct word!')
+            print('Hooray! You have found the correct word!\n')
             raise SystemExit
