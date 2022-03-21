@@ -4,8 +4,8 @@ class UserInput:
 
     @staticmethod
     def user_input():
-        word = input("Enter your guess: ")
-        states = input("Enter corresponding status of your guess: ")
+        word = input("Enter your guess: \n")
+        states = input("Enter corresponding status of your guess: \n")
 
         if all([st == "g" for st in states]):
             states = "ggggg"
