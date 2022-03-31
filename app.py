@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # get input, find the word!
     while not found:
         result = False
-        letters = UserInput().user_input()
+        letters = UserInput().get_word()
         if letters:
             result = suggest.next_suggestion(letters)
         if result:

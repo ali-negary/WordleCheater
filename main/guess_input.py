@@ -35,7 +35,7 @@ class UserInput:
                 return False
         return True
 
-    def get_words(
+    def get_word(
         self,
     ):
         self.user_input()
