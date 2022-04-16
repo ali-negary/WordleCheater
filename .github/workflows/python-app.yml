@@ -15,7 +15,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Python 3.8
       uses: actions/setup-python@v3
       with:
@@ -43,7 +42,6 @@ jobs:
       env:
         HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
         HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-      # if: job.success == 'success'
       run: |
         echo "Deploying to Heroku..."
         echo ${{ HEROKU_APP_NAME }}
