@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from main.suggester.suggest_words import SuggestWords
+from suggester.suggest_words import SuggestWords
 
 
 class TestSuggestWords(TestCase):
