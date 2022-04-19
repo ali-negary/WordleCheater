@@ -32,8 +32,9 @@ class SuggestWords:
                 self.exclude += item["letter"]
             else:
                 self.include += item["letter"]
-        self.include = list(set(self.include))
-        self.exclude = list(set(self.exclude))
+        del item
+        self.include = sorted(list(set(self.include)))
+        self.exclude = sorted(list(set(self.exclude)))
 
         # find start and end and initiate substring
         if self.letters[0]["state"] == "g":
@@ -41,16 +42,25 @@ class SuggestWords:
 
         if self.letters[-1]["state"] == "g":
             self.end = self.letters[-1]["letter"]
+
         # find substring
+        temp_substring = self.letters[0]["letter"]
+        sub_flag = False
         for index in range(1, len(self.letters)):
             current = self.letters[index]
             previous = self.letters[index - 1]
             if current["state"] == "g" and previous["state"] != "g":
-                self.substring = current["letter"]
+                sub_flag = True
+                temp_substring = current["letter"]
             if current["state"] == "g" and previous["state"] == "g":
-                self.substring += current["letter"]
+                sub_flag = True
+                temp_substring += current["letter"]
             else:
-                self.substring = ""
+                if not sub_flag:
+                    sub_flag = False
+                    temp_substring = ""
+
+        self.substring = temp_substring if len(temp_substring) > 1 else ""
 
     def create_url(
         self,
