@@ -23,25 +23,30 @@ jobs:
         python-version: "3.8"
     - name: Install dependencies
       run: |
+        echo "Installing dependencies, linting and testing packages..."
         python -m pip install --upgrade pip
-        pip install flake8 pytest
+        pip install flake8
+        pip install pytest
         pip install -r requirements.txt
         # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
+        echo "Linting code with flake8..."
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 59 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=59 --statistics
     - name: Test with pytest
       run: |
+        echo "Running tests..."
         export PYTHONPATH=main
         pytest
     - name: Deploy to Heroku
       env:
         HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
         HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-      if: github.ref == 'refs/heads/python-app-github-actions' && job.success == 'success'
+      if: job.status == 'success' && github.event_name == 'push'
       run: |
+        echo "Deploying to Heroku..."
         git remote add heroku https://heroku:$HEROKU_API_TOKEN@git.heroku.com/$HEROKU_APP_NAME.git
-        git push heroku HEAD:python-app-github-actions -f
+        git push heroku HEAD:main -f
