@@ -8,5 +8,10 @@ def index():
     return "Hello, World!"
 
 
+@app.route("homepage")
+def homepage():
+    return "This is the homepage."
+
+
 if __name__ == "__main__":
     app.run(debug=True)
