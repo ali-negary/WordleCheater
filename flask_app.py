@@ -3,7 +3,7 @@ from flask import Flask
 app = Flask(__name__)
 
 
-@app.route("/home")
+@app.route("/")
 def index():
     return "In case you did not notice, this is the Homepage."
 
