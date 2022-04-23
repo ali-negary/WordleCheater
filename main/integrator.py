@@ -1,5 +1,5 @@
-from main.suggester.suggest_words import SuggestWords
-from main.suggester.guess_input import UserInput
+from suggester.suggest_words import SuggestWords
+from suggester.guess_input import UserInput
 
 if __name__ == "__main__":
     # length = input('How many letters in it?')
