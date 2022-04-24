@@ -1,10 +1,10 @@
-from flask import Flask
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 
 app = Flask(__name__)
 
 
 @app.route("/")
-def index():
+def home():
     return "In case you did not notice, this is the Homepage."
 
 

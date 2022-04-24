@@ -1,3 +1,6 @@
+import logging
+
+
 class UserInput:
     def __init__(self):
         self.word = []
@@ -20,18 +23,18 @@ class UserInput:
             for index in range(len(word))
         ]
 
-        print(f"Current guess: {word.capitalize()} : {states}")
+        logging.info(f"Current guess: {word.capitalize()} : {states}")
         self.word = letters
 
     def validate_input(
         self,
     ):
         if len(self.word) != 5:
-            print("Invalid input. Please enter 5 letters")
+            logging.warning("Invalid input. Please enter 5 letters")
             return False
         for letter in self.word:
             if letter["state"] not in ["g", "b", "y"]:
-                print("Invalid input. Please enter g, b or y")
+                logging.warning("Invalid input. Please enter g, b or y")
                 return False
         return True
 

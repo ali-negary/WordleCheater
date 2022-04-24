@@ -2,6 +2,7 @@ import requests
 from english_words import english_words_set
 from bs4 import BeautifulSoup
 from string import digits
+import logging
 
 
 class SuggestWords:
@@ -15,54 +16,64 @@ class SuggestWords:
         self.end = ""
         self.substring = ""
         self.length = length
-        self.include = ""
-        self.exclude = ""
+        self.include = []
+        self.exclude = []
         self.url = ""
         self.words = []
         self.yellow_letters = {0: [], 1: [], 2: [], 3: [], 4: []}
         self.green_letters = {0: "", 1: "", 2: "", 3: "", 4: ""}
 
-    def process_letters_for_url(
-        self,
-    ) -> None:
+    def process_letters_for_url(self) -> None:
         """Processes the letters to create the url"""
         # find exclude and include
         for item in self.letters:
             if item["state"] == "b":
-                self.exclude += item["letter"]
+                self.exclude.append(item["letter"])
             else:
-                self.include += item["letter"]
-        self.include = list(set(self.include))
-        self.exclude = list(set(self.exclude))
+                self.include.append(item["letter"])
+        del item
+        self.include = sorted(list(set(self.include)))
+        self.exclude = sorted(list(set(self.exclude)))
 
         # find start and end and initiate substring
         if self.letters[0]["state"] == "g":
             self.start = self.letters[0]["letter"]
+            if self.letters[1]["state"] == "g":
+                self.start += self.letters[1]["letter"]
 
         if self.letters[-1]["state"] == "g":
             self.end = self.letters[-1]["letter"]
+            if self.letters[-2]["state"] == "g":
+                self.end = self.letters[-2]["letter"] + self.end
+
         # find substring
+        temp_substring = self.letters[0]["letter"]
+        sub_flag = False
         for index in range(1, len(self.letters)):
             current = self.letters[index]
             previous = self.letters[index - 1]
-            if current["state"] == "g" and previous["state"] != "g":
-                self.substring = current["letter"]
+            if (
+                current["state"] == "g"
+                and previous["state"] != "g"
+                and index != self.length - 1
+            ):
+                sub_flag = True
+                temp_substring = current["letter"]
             if current["state"] == "g" and previous["state"] == "g":
-                self.substring += current["letter"]
+                sub_flag = True
+                temp_substring += current["letter"]
             else:
-                self.substring = ""
+                if not sub_flag:
+                    sub_flag = False
+                    temp_substring = ""
 
-    def create_url(
-        self,
-    ) -> None:
+        self.substring = temp_substring if len(temp_substring) > 1 else ""
+
+    def create_url(self) -> None:
         """Creates an url to wordfinderx.com"""
-        start_with = (
-            "" if not self.start else f"words-start-with/{''.join(self.start)}/"
-        )
-        end_with = "" if not self.end else f"words-end-in/{''.join(self.end)}/"
-        contains = (
-            "" if not self.substring else f"words-contain/{''.join(self.substring)}/"
-        )
+        start_with = "" if not self.start else f"words-start-with/{self.start}/"
+        end_with = "" if not self.end else f"words-end-in/{self.end}/"
+        contains = "" if not self.substring else f"words-contain/{self.substring}/"
         length = "" if not self.length else f"length/{self.length}/"
         exclude = (
             "" if not self.exclude else f"exclude-letters/{''.join(self.exclude)}/"
@@ -80,26 +91,29 @@ class SuggestWords:
             + include
         )
 
-    def grab_words_online(
-        self,
-    ) -> dict:
+    def grab_words_online(self) -> dict:
         """Grabs words from wordfinderx.com"""
         # initiate variables.
-        status = False
+        success = False
         words_list = []
         # grab words from the url.
-        response = requests.get(self.url)
-        status = response.status_code
-        if status == 200:
-            page_content = response.content
-            soup = BeautifulSoup(page_content, "html.parser")
-            words_list = [
-                tag.text.strip().strip(digits).upper()
-                for tag in soup.find_all("div", {"class": "wordblock word-list-item"})
-            ]
-            status = True
+        try:
+            response = requests.get(self.url)
+            status = response.status_code
+            if status == 200:
+                page_content = response.content
+                soup = BeautifulSoup(page_content, "html.parser")
+                words_list = [
+                    tag.text.strip().strip(digits).upper()
+                    for tag in soup.find_all(
+                        "div", {"class": "wordblock word-list-item"}
+                    )
+                ]
+                success = True
+        except Exception as error:
+            logging.error(f"Error: {error}")
 
-        return {"status": status, "words": words_list}
+        return {"success": success, "words": words_list}
 
     def get_words_from_dictionary(self) -> dict:
         """Gets words from the dictionary"""
@@ -107,26 +121,22 @@ class SuggestWords:
         # initiate variables.
         status = False
         words_list = []
-        # grab words from url.
+        # grab words from package.
 
-        return {"status": status, "words": words_list}
+        return {"success": status, "words": words_list}
 
-    def list_words(
-        self,
-    ) -> None:
+    def list_words(self) -> None:
         """Provide a lists words"""
         words = self.grab_words_online()
-        if words["status"]:
+        if words["success"] and len(words["words"]) > 0:
             self.words = words["words"]
         else:
-            raise Exception("Could not get words")
+            raise Exception("Could not provide words!")
             # words = self.get_words_from_dictionary()
-            # if words['status']:
+            # if words['success'] and len(words['words']) > 0:
             #     self.words = words['words']
 
-    def place_state(
-        self,
-    ) -> None:
+    def place_state(self) -> None:
         """Completes yellow_letters and green_letters dictionaries
         based on the misplaced letters"""
         for index, letter in enumerate(self.letters):
@@ -135,9 +145,7 @@ class SuggestWords:
             elif letter["state"] == "g":
                 self.green_letters[index] = letter["letter"]
 
-    def filter_words(
-        self,
-    ) -> None:
+    def filter_words(self) -> None:
         """Filters the words based on user input"""
         filter_out = []
         for suggestion in self.words:
@@ -155,9 +163,7 @@ class SuggestWords:
                     break
         self.words = [word for word in self.words if word not in filter_out]
 
-    def validate_input(
-        self,
-    ) -> bool:
+    def validate_input(self) -> bool:
         """
         Must check if same place does not have
         more than one kind of state.
@@ -182,8 +188,8 @@ class SuggestWords:
                 print(", ".join(suggestions))
                 return True
             else:
-                print("The input is not valid. Enter the words again.\n")
+                logging.warning("The input is not valid. Enter the words again.\n")
                 return False
         else:
-            print("Hooray! You have found the correct word!\n")
-            raise SystemExit
+            logging.info("Hooray! You have found the correct word!\n")
+            raise SystemExit("Found!")
