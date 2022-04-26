@@ -1,4 +1,5 @@
-## Wordle Cheater
+## Worlde Cheater
+### I know there is typo!
 
 ----------------------------------------------------------------
 ### Let's have some fun! 

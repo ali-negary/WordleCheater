@@ -19,8 +19,15 @@ if __name__ == "__main__":
         letters = UserInput().get_word()
         if letters:
             result = suggest.next_suggestion(letters)
-        if result:
+        if result == "continue":
             i += 1
+        if result == "out":
+            print(
+                "We are out of words! You are on your own now, lad or lass or whatever idk."
+            )
+        if result == "found":
+            print("Hooray! You have found the correct word!")
+            raise SystemExit
         if i > 4:
             print("You ran out of guesses!")
             raise SystemExit

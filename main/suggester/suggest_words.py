@@ -11,6 +11,9 @@ class SuggestWords:
 
     def __init__(self, length: int) -> None:
         self.base_url = "https://wordfinderx.com/words-for/_/"
+        self.word_list_generated = False
+        self.used_dictionary = False
+        self.go_use_dictionary = False
         self.letters = []
         self.start = ""
         self.end = ""
@@ -22,6 +25,7 @@ class SuggestWords:
         self.words = []
         self.yellow_letters = {0: [], 1: [], 2: [], 3: [], 4: []}
         self.green_letters = {0: "", 1: "", 2: "", 3: "", 4: ""}
+        self.black_letters = []
 
     def process_letters_for_url(self) -> None:
         """Processes the letters to create the url"""
@@ -29,6 +33,7 @@ class SuggestWords:
         for item in self.letters:
             if item["state"] == "b":
                 self.exclude.append(item["letter"])
+                self.black_letters.append(item["letter"])
             else:
                 self.include.append(item["letter"])
         del item
@@ -71,6 +76,9 @@ class SuggestWords:
 
     def create_url(self) -> None:
         """Creates an url to wordfinderx.com"""
+        for letter in self.exclude:
+            if letter in self.substring or letter in self.include:
+                self.exclude.remove(letter)
         start_with = "" if not self.start else f"words-start-with/{self.start}/"
         end_with = "" if not self.end else f"words-end-in/{self.end}/"
         contains = "" if not self.substring else f"words-contain/{self.substring}/"
@@ -115,26 +123,38 @@ class SuggestWords:
 
         return {"success": success, "words": words_list}
 
-    def get_words_from_dictionary(self) -> dict:
+    def get_words_from_dictionary(self) -> bool:
         """Gets words from the dictionary"""
         # not implemented yet.
         # initiate variables.
         status = False
-        words_list = []
         # grab words from package.
+        try:
+            words = []  # get some words. idk how.
 
-        return {"success": status, "words": words_list}
+            self.used_dictionary = True
+        except Exception as error:
+            logging.error(f"Error: {error}")
+            words = []
 
-    def list_words(self) -> None:
+        if len(words) > 0:
+            self.words = words
+            status = True
+        else:
+            logging.info("Could not provide words from package!")
+
+        return status
+
+    def list_words_online(self) -> None:
         """Provide a lists words"""
+        self.process_letters_for_url()
+        self.create_url()
         words = self.grab_words_online()
         if words["success"] and len(words["words"]) > 0:
             self.words = words["words"]
+            self.word_list_generated = True
         else:
-            raise Exception("Could not provide words!")
-            # words = self.get_words_from_dictionary()
-            # if words['success'] and len(words['words']) > 0:
-            #     self.words = words['words']
+            logging.info("Could not provide words online!")
 
     def place_state(self) -> None:
         """Completes yellow_letters and green_letters dictionaries
@@ -144,6 +164,8 @@ class SuggestWords:
                 self.yellow_letters[index].append(letter["letter"])
             elif letter["state"] == "g":
                 self.green_letters[index] = letter["letter"]
+            elif letter["state"] == "b":
+                self.black_letters.append(letter["letter"])
 
     def filter_words(self) -> None:
         """Filters the words based on user input"""
@@ -158,6 +180,11 @@ class SuggestWords:
                 if self.green_letters[index]:
                     if suggestion[index] != self.green_letters[index]:
                         remove_flag = True
+                # if the letter is black.
+                if suggestion[index] in self.black_letters and suggestion[
+                    index
+                ] not in list(self.green_letters.values()):
+                    remove_flag = True
                 if remove_flag:
                     filter_out.append(suggestion)
                     break
@@ -179,17 +206,24 @@ class SuggestWords:
             # check whether the guess is valid.
             valid = self.validate_input()
             if valid:
-                self.process_letters_for_url()
-                self.create_url()
-                self.list_words()
+                if not self.word_list_generated:
+                    self.list_words_online()
+                elif self.go_use_dictionary:
+                    self.get_words_from_dictionary()
                 self.place_state()
                 self.filter_words()
-                suggestions = self.words
-                print(", ".join(suggestions))
-                return True
+                if len(self.words) > 0:
+                    print("Choose one of these:\n" + ", ".join(self.words))
+                    return "continue"
+                elif not self.used_dictionary:
+                    self.used_dictionary = True
+                    self.go_use_dictionary = True
+                else:
+                    logging.info("Could not provide suggestions!")
+                    return "out"
             else:
-                logging.warning("The input is not valid. Enter the words again.\n")
-                return False
+                logging.info("The input is not valid. Enter the words again.\n")
+                return "invalid"
         else:
-            logging.info("Hooray! You have found the correct word!\n")
-            raise SystemExit("Found!")
+            logging.info("Word is found.")
+            return "found"
