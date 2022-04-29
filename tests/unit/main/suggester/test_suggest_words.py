@@ -137,7 +137,7 @@ class TestSuggestWords(TestCase):
         self.suggest_words.grab_words_online = Mock(
             return_value={"success": True, "words": ["DAIRY", "DIRTY"]}
         )
-        self.suggest_words.list_words()
+        self.suggest_words.list_words_online()
         res = self.suggest_words.words
         self.assertTrue(isinstance(res, list))
         self.assertEqual(res, ["DAIRY", "DIRTY"])
@@ -147,7 +147,7 @@ class TestSuggestWords(TestCase):
             return_value={"success": True, "words": []}
         )
         with self.assertRaises(Exception) as exception_context:
-            self.suggest_words.list_words()
+            self.suggest_words.list_words_online()
         self.assertTrue("Could not provide words!" in str(exception_context.exception))
 
     def test_list_words_online_failed(self):
@@ -155,7 +155,7 @@ class TestSuggestWords(TestCase):
             return_value={"success": False, "words": []}
         )
         with self.assertRaises(Exception) as exception_context:
-            self.suggest_words.list_words()
+            self.suggest_words.list_words_online()
         self.assertTrue("Could not provide words!" in str(exception_context.exception))
 
     def test_place_state(self):
