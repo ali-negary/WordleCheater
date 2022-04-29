@@ -76,6 +76,8 @@ class SuggestWords:
 
     def create_url(self) -> None:
         """Creates an url to wordfinderx.com"""
+        # if a letter is listed in substring, it should be removed from exclude list.
+        # this happens when user wants to check if occurrence of a letter is more than once.
         for letter in self.exclude:
             if letter in self.substring or letter in self.include:
                 self.exclude.remove(letter)
@@ -150,13 +152,13 @@ class SuggestWords:
         self.process_letters_for_url()
         self.create_url()
         words = self.grab_words_online()
+        self.words = words["words"]
         if words["success"] and len(words["words"]) > 0:
-            self.words = words["words"]
             self.word_list_generated = True
         else:
             logging.info("Could not provide words online!")
 
-    def place_state(self) -> None:
+    def update_place_state(self) -> None:
         """Completes yellow_letters and green_letters dictionaries
         based on the misplaced letters"""
         for index, letter in enumerate(self.letters):
@@ -206,11 +208,14 @@ class SuggestWords:
             # check whether the guess is valid.
             valid = self.validate_input()
             if valid:
+                # check if the list of words is generated or should fetch words online.
                 if not self.word_list_generated:
                     self.list_words_online()
-                elif self.go_use_dictionary:
+                # check if generated list is sufficient or should use the dictionary package.
+                if self.go_use_dictionary:
                     self.get_words_from_dictionary()
-                self.place_state()
+                # filter the words based on the user input.
+                self.update_place_state()
                 self.filter_words()
                 if len(self.words) > 0:
                     print("Choose one of these:\n" + ", ".join(self.words))
@@ -218,12 +223,9 @@ class SuggestWords:
                 elif not self.used_dictionary:
                     self.used_dictionary = True
                     self.go_use_dictionary = True
-                else:
-                    logging.info("Could not provide suggestions!")
-                    return "out"
-            else:
-                logging.info("The input is not valid. Enter the words again.\n")
-                return "invalid"
-        else:
-            logging.info("Word is found.")
-            return "found"
+                logging.info("Could not provide suggestions!")
+                return "out"
+            logging.info("The input is not valid. Enter the words again.\n")
+            return "invalid"
+        logging.info("Word is found.")
+        return "found"

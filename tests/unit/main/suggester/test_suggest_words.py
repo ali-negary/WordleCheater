@@ -79,13 +79,14 @@ class TestSuggestWords(TestCase):
         self.suggest_words.exclude = ["E", "X", "C", "L", "U", "D", "E"]
         self.suggest_words.include = ["I", "N", "C", "L", "U", "D", "E"]
         self.suggest_words.create_url()
-        res = self.suggest_words.url
+
         expected_url = (
             "https://wordfinderx.com/words-for/_/words-start-with/START/"
-            "words-end-in/END/words-contain/SUB/length/5/exclude-letters/EXCLUDE/"
-            "include-letters/INCLUDE/"
+            "words-end-in/END/words-contain/SUB/length/5/"
+            "exclude-letters/XLD/include-letters/INCLUDE/"
         )
-        self.assertEqual(res, expected_url)
+        self.assertEqual(self.suggest_words.url, expected_url)
+        self.assertEqual(sorted(self.suggest_words.exclude), ["D", "L", "X"])
 
     def test_grab_words_online_successful_words(self):
         self.suggest_words.url = (
@@ -122,6 +123,12 @@ class TestSuggestWords(TestCase):
         self.assertEqual(res["success"], False)
         self.assertEqual(res["words"], [])
 
+        expected_log = "Error: Invalid URL 'None'"
+        with self.assertLogs() as captured_log:
+            self.suggest_words.grab_words_online()
+        self.assertEqual(len(captured_log.records), 1)
+        self.assertTrue(captured_log.records[0].getMessage().startswith(expected_log))
+
     def test_grab_words_online_failed_bad_url(self):
         self.suggest_words.url = "https://wordfinderx.com/XXXXX"
         res = self.suggest_words.grab_words_online()
@@ -134,6 +141,8 @@ class TestSuggestWords(TestCase):
         pass
 
     def test_list_words_online_successful_with_words(self):
+        self.suggest_words.process_letters_for_url = Mock()
+        self.suggest_words.create_url = Mock()
         self.suggest_words.grab_words_online = Mock(
             return_value={"success": True, "words": ["DAIRY", "DIRTY"]}
         )
@@ -141,24 +150,37 @@ class TestSuggestWords(TestCase):
         res = self.suggest_words.words
         self.assertTrue(isinstance(res, list))
         self.assertEqual(res, ["DAIRY", "DIRTY"])
+        self.assertEqual(self.suggest_words.word_list_generated, True)
 
     def test_list_words_online_successful_no_words(self):
+        self.suggest_words.process_letters_for_url = Mock()
+        self.suggest_words.create_url = Mock()
         self.suggest_words.grab_words_online = Mock(
             return_value={"success": True, "words": []}
         )
-        with self.assertRaises(Exception) as exception_context:
+        self.suggest_words.list_words_online()
+
+        expected_log = "Could not provide words online!"
+        with self.assertLogs() as captured_log:
             self.suggest_words.list_words_online()
-        self.assertTrue("Could not provide words!" in str(exception_context.exception))
+        self.assertEqual(len(captured_log.records), 1)
+        self.assertEqual(captured_log.records[0].getMessage(), expected_log)
 
     def test_list_words_online_failed(self):
+        self.suggest_words.process_letters_for_url = Mock()
+        self.suggest_words.create_url = Mock()
         self.suggest_words.grab_words_online = Mock(
             return_value={"success": False, "words": []}
         )
-        with self.assertRaises(Exception) as exception_context:
-            self.suggest_words.list_words_online()
-        self.assertTrue("Could not provide words!" in str(exception_context.exception))
+        self.suggest_words.list_words_online()
 
-    def test_place_state(self):
+        expected_log = "Could not provide words online!"
+        with self.assertLogs() as captured_log:
+            self.suggest_words.list_words_online()
+        self.assertEqual(len(captured_log.records), 1)
+        self.assertEqual(captured_log.records[0].getMessage(), expected_log)
+
+    def test_update_place_state(self):
         self.suggest_words.letters = [
             {"letter": "D", "state": "g"},
             {"letter": "E", "state": "g"},
@@ -168,15 +190,23 @@ class TestSuggestWords(TestCase):
         ]
         expected_yellow = {0: [], 1: [], 2: [], 3: ["L"], 4: ["T"]}
         expected_green = {0: "D", 1: "E", 2: "", 3: "", 4: ""}
-        expected_black = "A"
+        expected_black = ["A"]
 
-        self.suggest_words.place_state()
+        self.suggest_words.update_place_state()
         yellow = self.suggest_words.yellow_letters
         green = self.suggest_words.green_letters
+        black = self.suggest_words.black_letters
         self.assertEqual(yellow, expected_yellow)
         self.assertEqual(green, expected_green)
-        self.assertTrue(expected_black not in green.values())
-        self.assertTrue(all([expected_black not in place for place in yellow.values()]))
+        self.assertEqual(black, expected_black)
+        black_in_green = all(
+            [False if letter in black else True for letter in green.values()]
+        )
+        self.assertTrue(black_in_green)
+        black_in_yellow = all(
+            [False if letter in black else True for letter in yellow.values()]
+        )
+        self.assertTrue(black_in_yellow)
 
     def test_filter_words(self):
         self.suggest_words.words = [
@@ -215,9 +245,15 @@ class TestSuggestWords(TestCase):
             {"letter": "L", "state": "g"},
             {"letter": "T", "state": "g"},
         ]
-        with self.assertRaises(SystemExit) as exit_context:
+        res = self.suggest_words.next_suggestion(letters=letters)
+        self.assertTrue(isinstance(res, str))
+        self.assertEqual(res, "found")
+
+        expected_log = "Word is found."
+        with self.assertLogs() as captured_log:
             self.suggest_words.next_suggestion(letters=letters)
-        self.assertEqual(str(exit_context.exception), "Found!")
+        self.assertEqual(len(captured_log.records), 1)
+        self.assertEqual(captured_log.records[0].getMessage(), expected_log)
 
     def tearDown(self) -> None:
         self.suggest_words = None

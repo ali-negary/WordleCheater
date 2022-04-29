@@ -1,5 +1,4 @@
-## Worlde Cheater
-### I know there is typo!
+## Wordle Cheater
 
 ----------------------------------------------------------------
 ### Let's have some fun! 
@@ -30,7 +29,7 @@ Then, you will enter the status of your guess according to the result in wordle 
 You will see a list of suggestion after a few seconds to help you make your next guess and repeat from top if needed.
 
 ### Why?
-This repo is a playground for me to learn and experiment with the Wordle challenge.
+This repo is a playground for me to learn and experiment things with the Wordle challenge.
 
 I wanted to practice some scarping, unit-testing, and CI/CD. That's all.
 
